@@ -1,0 +1,182 @@
+# Local demo overrides - used on top of demo/charts/linse/values.yaml
+# helm install linse ./demo/charts/linse -n linse \
+#   -f demo/charts/linse/values.yaml \
+#   -f demo/local/values-local.yaml
+
+image:
+  repository: kamran420/lens-with-go
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  # Access the app at http://linse.localhost after adding to /etc/hosts (see QUICKSTART.md)
+  host: linse.localhost
+
+postgres:
+  enabled: true
+  password: "linse-demo-secret"
+
+redis:
+  enabled: true
+
+# Route gitlab.local -> host machine where GitLab CE container runs.
+# host-gateway is resolved by k3d to the Docker host IP automatically.
+hostAliases:
+  - ip: "172.17.0.1"   # Docker bridge IP (Linux). Mac: use host.docker.internal IP
+    hostnames:
+      - "gitlab.local"
+
+config: |
+  database:
+    host: linse-postgres
+    port: 5432
+    user: lens
+    password: "linse-demo-secret"
+    dbname: lens
+    sslmode: disable
+    rls_enabled: false
+    max_open_conns: 0
+    max_idle_conns: 0
+    conn_max_lifetime: ""
+
+  auth:
+    mode: ldap
+    jwt_secret: "local-demo-jwt-secret-change-in-prod"
+    jwt_lifetime: 8h
+    allowed_groups: []
+    default_role: platform_admin
+    role_mappings: []
+    jwt_secrets:
+      k0: "local-demo-jwt-secret-change-in-prod"
+    active_kid: k0
+    ldap:
+      label: LDAP
+      host: openldap.linse.svc.cluster.local
+      port: 389
+      bind_dn: "cn=admin,dc=demo,dc=local"
+      bind_password: "admin"
+      encryption: plain
+      base: "dc=demo,dc=local"
+      uid: uid
+      insecure_skip_verify: false
+      operation_timeout: ""
+      pool_min_idle: 0
+      pool_max_idle: 0
+
+  identity:
+    auto_provision: true
+    default_cluster_role: cluster-admin
+    group_mappings: []
+
+  tenants:
+    enforced: false
+
+  observability:
+    prometheus_url: ""
+    grafana_url: ""
+    grafana_external_url: ""
+
+  argocd: []
+
+  gitlab:
+    url: "http://gitlab.local:8929"
+    token: ""         # Set after GitLab starts: Settings -> Access Tokens
+    username: "root"
+    password: "Demo1234!"
+    insecure: false
+    code_group_path: ""
+    chart_group_path: ""
+    docker_registry: ""
+    webhook_secret: ""
+
+  redis:
+    addr: linse-redis:6379
+    channel: lens:events
+
+  environments: []
+  notifications: []
+
+  cost:
+    cpu_hourly_rate: 0
+    memory_hourly_rate: 0
+
+  opa:
+    url: ""
+    query: ""
+    fail_open: false
+
+  webhooks:
+    gitlab_secret: ""
+    argocd_secret: ""
+    dedup_retention_hours: 168
+    dedup_cleanup_interval_hours: 6
+    gitlab_allowed_ips: []
+
+  audit:
+    retention_days: 0
+    purge_interval_hours: 0
+
+  plugins:
+    gitops:
+      argocd:
+        instances: []
+    metrics:
+      prometheus:
+        url: ""
+    dashboards:
+      grafana:
+        url: ""
+        browser_url: ""
+    auth: {}
+
+  rateLimit:
+    globalPerIP: 0
+    mutationPerUser: 0
+    loginPerIP: 0
+    sshPerIP: 0
+    onboardingPerUser: 0
+    onboardingBurst: 0
+
+  reconciler:
+    interval: ""
+    auto_remediate: false
+    batch_size: 0
+    workers: 0
+    stale_after: ""
+
+  cloud_shell:
+    enabled: true
+    namespace: lens-shells
+    service_account_name: ""
+    image: bitnami/kubectl:latest
+    idle_timeout_minutes: 30
+    max_pods: 5
+    cpu_limit: ""
+    memory_limit: ""
+    pvc_size: ""
+    storage_class: ""
+
+  discovery:
+    namespace_blacklist: []
+    heuristic_ignore_patterns: []
+    fanout_threshold: 0
+    max_resources_per_gvr: 0
+    max_namespaces_per_scan: 0
+    max_custom_profile_gvrs: 0
+    per_gvr_timeout_seconds: 0
+
+  workload_health:
+    enabled: true
+    tenant_id: ""
+    workload_poll_interval: 30s
+    event_poll_interval: 30s
+    resource_poll_interval: 30s
+    argo_poll_interval: 2m
+    cleanup_batch_size: 0
+
+  ansible_crypto_key: ""

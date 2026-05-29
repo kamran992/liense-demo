@@ -1,0 +1,130 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openldap-seed
+  namespace: linse
+data:
+  # Imported automatically on first boot via LDAP_SEED_INTERNAL_LDIF_PATH
+  seed.ldif: |
+    dn: ou=users,dc=demo,dc=local
+    objectClass: organizationalUnit
+    ou: users
+
+    dn: ou=groups,dc=demo,dc=local
+    objectClass: organizationalUnit
+    ou: groups
+
+    dn: uid=alice,ou=users,dc=demo,dc=local
+    objectClass: inetOrgPerson
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    cn: Alice Admin
+    sn: Admin
+    uid: alice
+    uidNumber: 1001
+    gidNumber: 1001
+    homeDirectory: /home/alice
+    loginShell: /bin/bash
+    userPassword: {SSHA}DPfdQDw8LkjUCefhwvNW0UQxyx208ez8
+    mail: alice@demo.local
+
+    dn: uid=bob,ou=users,dc=demo,dc=local
+    objectClass: inetOrgPerson
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    cn: Bob Developer
+    sn: Developer
+    uid: bob
+    uidNumber: 1002
+    gidNumber: 1002
+    homeDirectory: /home/bob
+    loginShell: /bin/bash
+    userPassword: {SSHA}DPfdQDw8LkjUCefhwvNW0UQxyx208ez8
+    mail: bob@demo.local
+
+    dn: uid=carol,ou=users,dc=demo,dc=local
+    objectClass: inetOrgPerson
+    objectClass: posixAccount
+    objectClass: shadowAccount
+    cn: Carol Ops
+    sn: Ops
+    uid: carol
+    uidNumber: 1003
+    gidNumber: 1003
+    homeDirectory: /home/carol
+    loginShell: /bin/bash
+    userPassword: {SSHA}DPfdQDw8LkjUCefhwvNW0UQxyx208ez8
+    mail: carol@demo.local
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openldap
+  namespace: linse
+  labels:
+    app: openldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openldap
+  template:
+    metadata:
+      labels:
+        app: openldap
+    spec:
+      containers:
+        - name: openldap
+          image: osixia/openldap:1.5.0
+          ports:
+            - containerPort: 389
+              name: ldap
+          env:
+            - name: LDAP_ORGANISATION
+              value: "Demo Org"
+            - name: LDAP_DOMAIN
+              value: "demo.local"
+            - name: LDAP_ADMIN_PASSWORD
+              value: "admin"
+            - name: LDAP_READONLY_USER
+              value: "false"
+            - name: LDAP_TLS
+              value: "false"
+            - name: LDAP_SEED_INTERNAL_LDIF_PATH
+              value: /seed
+          volumeMounts:
+            - name: seed
+              mountPath: /seed
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          readinessProbe:
+            tcpSocket:
+              port: 389
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: seed
+          configMap:
+            name: openldap-seed
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openldap
+  namespace: linse
+  labels:
+    app: openldap
+spec:
+  type: ClusterIP
+  ports:
+    - port: 389
+      targetPort: 389
+      name: ldap
+  selector:
+    app: openldap

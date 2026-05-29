@@ -1,0 +1,6 @@
+apiVersion: v2
+name: linse
+description: Linse - Kubernetes Internal DevOps Platform
+type: application
+version: 0.1.0
+appVersion: "latest"

@@ -1,0 +1,30 @@
+Linse has been deployed to namespace: {{ .Release.Namespace }}
+
+Get the application URL:
+{{- if .Values.ingress.enabled }}
+  http{{ "" }}://{{ .Values.ingress.host }}
+{{- else }}
+  kubectl get svc linse -n {{ .Release.Namespace }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}'
+{{- end }}
+
+{{- if eq .Values.config "TODO: set your config" }}
+
+WARNING: You are using the default placeholder config.
+  Edit values.yaml and set your LDAP, database, and GitLab credentials before use.
+{{- end }}
+
+{{- if .Values.postgres.enabled }}
+PostgreSQL is running as linse-postgres in this namespace.
+  Database: {{ .Values.postgres.database }}
+  User:     {{ .Values.postgres.user }}
+{{- else }}
+PostgreSQL is NOT deployed by this chart.
+  Set database.host in config to point at your external PostgreSQL instance.
+{{- end }}
+
+{{- if .Values.redis.enabled }}
+Redis is running as linse-redis in this namespace.
+{{- else }}
+Redis is NOT deployed by this chart.
+  Set redis.addr in config to point at your external Redis instance.
+{{- end }}

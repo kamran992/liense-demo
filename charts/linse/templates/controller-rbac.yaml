@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: linse-controller
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "linse.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: linse-controller
+  labels:
+    {{- include "linse.labels" . | nindent 4 }}
+rules:
+  # ShellSession CRD - full lifecycle including status subresource
+  - apiGroups: ["lens.io"]
+    resources: ["shellsessions"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["lens.io"]
+    resources: ["shellsessions/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["lens.io"]
+    resources: ["shellsessions/finalizers"]
+    verbs: ["update"]
+
+  # Pods in lens-shells - create/delete shell pods
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # Secrets in lens-shells - kubeconfig secrets per user
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list", "watch", "create", "delete"]
+
+  # ServiceAccounts in lens-shells - dedicated shell pod identity
+  - apiGroups: [""]
+    resources: ["serviceaccounts"]
+    verbs: ["get", "create"]
+
+  # PVCs in lens-shells - shared home volume per user
+  - apiGroups: [""]
+    resources: ["persistentvolumeclaims"]
+    verbs: ["get", "create"]
+
+  # Namespace creation for lens-shells bootstrap
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "create"]
+
+  # ResourceQuota - pod cap enforcement
+  - apiGroups: [""]
+    resources: ["resourcequotas"]
+    verbs: ["get", "create", "update"]
+
+  # Events - audit trail for all reconciler actions
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+
+  # Leader election
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: linse-controller
+  labels:
+    {{- include "linse.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: linse-controller
+subjects:
+  - kind: ServiceAccount
+    name: linse-controller
+    namespace: {{ .Release.Namespace }}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    {{- include "linse.labels" . | nindent 4 }}
+---
+# lens-shells must exist before the cloudshell RBAC Role is created.
+# The controller also creates it at runtime, but Helm needs it up front.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: lens-shells
+  labels:
+    {{- include "linse.labels" . | nindent 4 }}

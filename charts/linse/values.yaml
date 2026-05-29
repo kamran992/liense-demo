@@ -1,0 +1,236 @@
+image:
+  repository: kamran420/lens-with-go
+  # Set to the image tag built by your pipeline, e.g. "demo-1.0.0" or the commit SHA.
+  tag: "demo"
+
+service:
+  type: LoadBalancer
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  host: linse.example.com
+
+# Add /etc/hosts entries to the pod - useful when Argo CD or other internal
+# services are only reachable by IP inside the cluster.
+# Example:
+#   hostAliases:
+#     - ip: "10.0.0.1"
+#       hostnames:
+#         - "argocd.internal.example.com"
+hostAliases: []
+
+postgres:
+  enabled: false
+  image: postgres:16-alpine
+  user: lens
+  password: lens
+  database: lens
+  storage: 1Gi
+  # Uses the cluster default storage class. Change if you need a specific one:
+  #   storageClass: "nfs-ssd"
+  storageClass: ""
+
+redis:
+  enabled: false
+  image: redis:7-alpine
+
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "100m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+controller:
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "200m"
+
+# config.yaml - mounted as a Secret at /etc/lens/config.yaml inside the pod.
+# Fill in the placeholders before installing.
+config: |
+  database:
+    host: linse-postgres
+    port: 5432
+    user: lens
+    password: "lens"
+    dbname: lens
+    sslmode: disable
+    rls_enabled: false
+    max_open_conns: 0
+    max_idle_conns: 0
+    conn_max_lifetime: ""
+
+  auth:
+    mode: ldap          # "none" | "ldap"
+    jwt_secret: ""
+    jwt_lifetime: 8h
+    allowed_groups: []  # empty = any LDAP user can log in
+    # Demo: every LDAP user gets platform_admin.
+    # To restrict by group, add entries here:
+    #   role_mappings:
+    #     - ldap_group: IDPAdmins
+    #       role: platform_admin
+    #     - ldap_group: Developers
+    #       role: developer
+    default_role: platform_admin
+    role_mappings: []
+    ldap:
+      label: LDAP
+      host: ldap.example.com
+      port: 389
+      bind_dn: "CN=svc,OU=SERVICE_USERS,OU=ORG,DC=example,DC=local"
+      bind_password: ""
+      encryption: plain
+      base: "OU=ORG,DC=example,DC=local"
+      uid: sAMAccountName
+      insecure_skip_verify: false
+      operation_timeout: ""
+      pool_min_idle: 0
+      pool_max_idle: 0
+    jwt_secrets:
+      k0: ""
+    active_kid: k0
+
+  identity:
+    auto_provision: true
+    # Demo: every LDAP user gets cluster-admin on all clusters.
+    # To restrict by group, clear default_cluster_role and add group_mappings:
+    #   default_cluster_role: ""
+    #   group_mappings:
+    #     - ldap_group: IDPAdmins
+    #       cluster_role: cluster-admin
+    default_cluster_role: cluster-admin
+    group_mappings: []
+
+  tenants:
+    enforced: false
+
+  observability:
+    prometheus_url: ""
+    grafana_url: ""
+    grafana_external_url: ""
+
+  argocd: []
+
+  gitlab:
+    url: "https://gitlab.example.com"
+    token: ""
+    username: ""
+    password: ""
+    insecure: false
+    # GitLab group where application source code repos live.
+    # Example: if your repos are at gitlab.example.com/my-org/backend/api
+    # set this to "my-org/backend"
+    code_group_path: ""
+    # GitLab group where Helm chart repos live (used by the onboarding golden path).
+    # Example: gitlab.example.com/my-org/charts -> "my-org/charts"
+    chart_group_path: ""
+    docker_registry: "registry.example.com/library"
+    webhook_secret: ""
+
+  redis:
+    addr: linse-redis:6379
+    channel: lens:events
+
+  environments: []
+  notifications: []
+
+  cost:
+    cpu_hourly_rate: 0
+    memory_hourly_rate: 0
+
+  opa:
+    url: ""
+    query: ""
+    fail_open: false
+
+  webhooks:
+    gitlab_secret: ""
+    argocd_secret: ""
+    dedup_retention_hours: 168
+    dedup_cleanup_interval_hours: 6
+    gitlab_allowed_ips: []
+
+  audit:
+    retention_days: 0
+    purge_interval_hours: 0
+
+  plugins:
+    gitops:
+      argocd:
+        instances:
+          - name: prod
+            url: "https://argocd-prod.example.com"
+            token: ""
+            username: admin
+            password: ""
+            insecure: false
+          - name: dev
+            url: "https://argocd-dev.example.com"
+            token: ""
+            username: admin
+            password: ""
+            insecure: false
+    metrics:
+      prometheus:
+        url: "https://prometheus.example.com"
+    dashboards:
+      grafana:
+        url: "https://grafana.example.com/"
+        browser_url: "https://grafana.example.com/"
+    auth: {}
+
+  rateLimit:
+    globalPerIP: 0
+    mutationPerUser: 0
+    loginPerIP: 0
+    sshPerIP: 0
+    onboardingPerUser: 0
+    onboardingBurst: 0
+
+  reconciler:
+    interval: ""
+    auto_remediate: false
+    batch_size: 0
+    workers: 0
+    stale_after: ""
+
+  cloud_shell:
+    enabled: true
+    namespace: lens-shells
+    service_account_name: ""
+    image: bitnami/kubectl:latest
+    idle_timeout_minutes: 30
+    max_pods: 5
+    cpu_limit: ""
+    memory_limit: ""
+    pvc_size: ""
+    storage_class: ""
+
+  discovery:
+    namespace_blacklist: []
+    heuristic_ignore_patterns: []
+    fanout_threshold: 0
+    max_resources_per_gvr: 0
+    max_namespaces_per_scan: 0
+    max_custom_profile_gvrs: 0
+    per_gvr_timeout_seconds: 0
+
+  workload_health:
+    enabled: true
+    tenant_id: ""
+    workload_poll_interval: 30s
+    event_poll_interval: 30s
+    resource_poll_interval: 30s
+    argo_poll_interval: 2m
+    cleanup_batch_size: 0
+
+  ansible_crypto_key: ""

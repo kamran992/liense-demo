@@ -1,0 +1,26 @@
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: linse-demo
+servers: 1
+agents: 0
+image: rancher/k3s:v1.29.4-k3s1
+ports:
+  # Ingress - access the app at http://localhost
+  - port: 80:80
+    nodeFilters:
+      - loadbalancer
+  # HTTPS (optional)
+  - port: 443:443
+    nodeFilters:
+      - loadbalancer
+options:
+  k3d:
+    wait: true
+    timeout: 120s
+  k3s:
+    extraArgs:
+      # Disable Traefik - we use nginx ingress from the chart
+      - arg: --disable=traefik
+        nodeFilters:
+          - server:*

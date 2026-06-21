@@ -5,7 +5,7 @@
 
 image:
   repository: kamran420/lens-with-go
-  tag: "latest"
+  tag: "demo-2"
 
 service:
   type: ClusterIP
@@ -120,19 +120,6 @@ config: |
   audit:
     retention_days: 0
     purge_interval_hours: 0
-
-  plugins:
-    gitops:
-      argocd:
-        instances: []
-    metrics:
-      prometheus:
-        url: ""
-    dashboards:
-      grafana:
-        url: ""
-        browser_url: ""
-    auth: {}
 
   rateLimit:
     globalPerIP: 0

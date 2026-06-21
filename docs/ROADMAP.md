@@ -52,17 +52,31 @@ Several later roadmap items depend on this model being stable.
 ## Designed / Near-Term
 
 <a id="2-onboarding-refactor"></a>
-### Onboarding refactor
+### Onboarding evolution
+
+Status: Shipped — evolving
+
+The DAG workflow engine has landed and is the onboarding path today: a model-driven engine with explicit dependency edges, bounded-parallel execution, per-service/target fan-out (`for_each`), per-step retry/timeout, idempotency, crash-safe resume, dry-run preview, and reversible steps with rollback policies. The step handler interface is vendor-neutral (`action_type` resolved through a registry), and the default GitLab + Argo CD flow is a stored, versioned model rather than hardcoded logic.
+
+Remaining work on top of the engine:
+
+- **Operator-defined approval gates** — pause a flow for human sign-off mid-DAG.
+- **More step handlers** — additional SCM (e.g. GitHub/Gitea), GitOps, and CI systems behind the existing registry.
+- **Event-sourced execution log + discovery-driven reconciliation** — an append-only event history as the source of truth, plus reconciling onboarded resources against live discovery.
+- **Conditional branches in shipped flows** — the engine supports step conditions; the default flow does not use them yet.
+
+<a id="12-backstage-integration"></a>
+### Backstage integration
 
 Status: Designed / near-term
 
-The current onboarding implementation is a resumable linear workflow: one fixed sequence of steps, GitLab only, and no approval gates.
+Backstage is the developer-facing declared catalog and portal; Linse is the runtime intelligence, team model, and operator control plane. The integration keeps each authoritative for what it owns.
 
-The planned replacement is a DAG-based workflow engine with explicit dependency edges. That would allow parallel steps, conditional branches, operator-defined approval gates, and per-team or per-environment flows.
+Today Linse projects its catalog into Backstage one-way (teams → Groups, applications → Systems, services → Components) through a read-only export endpoint. The planned model inverts this:
 
-The step handler interface should be vendor-neutral so the same engine can work with different SCM, GitOps, or CI systems. The current GitLab-only onboarding flow would become the default workflow definition instead of hardcoded application logic.
-
-The goal is clearer progress reporting, safer retries, and better recovery when one step fails.
+- **Org/identity projection** — Linse projects its team/user model into Backstage as Groups/Users, so Backstage takes org data from Linse instead of a second source.
+- **Catalog read + mapping** — Linse polls the Backstage catalog API and auto-maps declared Components to its own service model (by GitLab project, repo, Argo CD source, or labels).
+- **Runtime enrichment** — Linse exposes read-only endpoints a Backstage plugin calls at view time to render live runtime status (cluster/namespace, Argo CD sync, pipeline state, version, health, drift). Linse never writes the Backstage software catalog.
 
 <a id="3-infrastructure-intelligence"></a>
 ### Inventory and classification

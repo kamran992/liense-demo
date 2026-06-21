@@ -75,8 +75,8 @@ Review discovery proposals and promote selected workloads into the service catal
 ## 4. Onboarding
 
 **Golden-path onboarding workflow** — 🟡 Partial
-Automates the initial setup for a service across GitLab, Argo CD, Kubernetes namespace/RBAC, and registry credentials.
-Notes: Linear flow only. GitLab-only today. DAG-based workflow engine planned wich will support custom flows, N:M scm mapping ([Roadmap](ROADMAP.md#2-onboarding-refactor)).
+Provisions a service end-to-end across GitLab (SCM groups, code + chart repos), the service catalog, Helm chart rendering, and Argo CD (project + applications), driven by a **model-defined DAG workflow engine**: dependency-ordered steps run with bounded parallelism, fan out per service/target (`for_each`), and support per-step retry/timeout, idempotency, crash-safe resume, dry-run preview, and reversible steps with rollback policies.
+Notes: Flows are stored, versioned models — not hardcoded logic — and `action_type` resolves through a vendor-neutral handler registry. Shipped handlers target GitLab + Argo CD. Approval gates and additional SCM/CI handlers are planned ([Roadmap](ROADMAP.md#2-onboarding-refactor)). It is Partial because of the rough edges below, not because the engine is a prototype.
 
 **Known bugs / rough edges** — 🟡
 The golden path completes, but these are sharp edges hit during demo prep:
@@ -203,9 +203,21 @@ When access is granted or a cluster is added, Linse can provision Kubernetes `Cl
 
 ---
 
+## 12. Developer Portal Integration (Backstage)
+
+Linse is not a developer portal and does not replace Backstage. It meets Backstage at a clean seam: Backstage owns the declared software catalog; Linse supplies runtime intelligence, the team/identity model, and operations.
+
+**Catalog projection to Backstage** — 🟡 Partial
+A token-authenticated, read-only endpoint projects Linse's catalog into Backstage for an Entity Provider to ingest: owner teams become Groups, applications become Systems, and services become Components (with lifecycle, owner, repo source location, and a deep link back to Linse). One-way today (Linse → Backstage).
+
+**Target model — Backstage declares, Linse operates** — 🔵 Planned ([Roadmap](ROADMAP.md#12-backstage-integration))
+Invert the relationship: Backstage owns `System`/`Component`/`API` declarations, while Linse projects its team/identity model into Backstage, reads the declared catalog and auto-maps Components to its own service model, and exposes read-only runtime enrichment (cluster/namespace, Argo CD sync, pipeline state, health, drift) rendered by a Backstage plugin at view time. Linse never writes the Backstage software catalog.
+
+---
+
 ## Out of scope today
 
-- Does not replace Backstage (developer self-service portal).
+- Does not replace Backstage (developer self-service portal) — it integrates with it (see §12).
 - Does not replace PagerDuty (incident management product).
 - Does not ship a policy engine. OPA / Kyverno integration is planned ([Roadmap](ROADMAP.md#6-opa--kyverno-integration)); Linse will surface violations, not enforce them.
 - Does not ship cloud-resource provisioners. Crossplane integration is planned for cloud resources ([Roadmap](ROADMAP.md#5-cloud-resource-management-via-crossplane)); on-prem automation is handled through Ansible/SSH integrations.

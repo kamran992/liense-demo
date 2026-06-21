@@ -37,7 +37,8 @@ The container image is `kamran420/lens-with-go`.
 - Service catalog views built around teams, services, environments, targets, and pipelines
 - Service discovery for workloads already running in connected clusters
 - GitOps visibility through Argo CD integrations
-- GitLab-backed onboarding workflows
+- Golden-path service onboarding via a DAG workflow engine (GitLab, Argo CD, Helm)
+- Catalog projection to Backstage (teams, applications, services)
 - Local/LDAP authentication, RBAC, impersonation, and audit logging
 - Operational integrations around Prometheus, Grafana, Ansible, SSH, and SFTP
 
@@ -81,7 +82,8 @@ Status tags: Working / Partial.
 | Multi-cluster and cluster operations | Working | Resource explorer, manifest editor with dry-run, CRD templates, multi-pod log viewer, events |
 | Service catalog and service model | Working | Service dossier views, ownership metadata, runtime topology |
 | Service discovery | Working | Profile-based grouping and promote-to-catalog flow |
-| Onboarding | Partial | Linear flow only; GitLab-only today; DAG-based workflow engine planned |
+| Onboarding | Partial | DAG workflow engine — parallel steps, fan-out, retry, rollback, resume, dry-run; GitLab + Argo CD handlers; rough edges remain |
+| Developer portal (Backstage) | Partial | One-way catalog projection today; "Backstage declares, Linse operates" model designed |
 | GitOps | Working | Argo CD application status, sync, rollback, and multi-instance support |
 | Pipelines and promotions | Partial | Pipeline views work; environment-to-environment promotion is not fully tested end-to-end |
 | SRE and reliability | Partial | Early incident, SLI, and scorecard surfaces; refactor planned |
@@ -94,18 +96,15 @@ Full breakdown: [`docs/FEATURES.md`](docs/FEATURES.md).
 
 ## Architecture
 
-Linse runs in a management cluster. It has an API service, a controller, Postgres, Redis, and a
-React frontend. The API talks to registered workload clusters and uses informer-backed caches for
-read-heavy Kubernetes data. Most read-heavy UI flows are served from the API process cache, which
-reduces repeated calls to workload-cluster apiservers.
+Linse runs in a management cluster (API service, controller, Postgres, Redis, and a React frontend)
+and connects to your workload clusters, serving read-heavy views from an in-process cache to reduce
+calls to workload-cluster apiservers.
 
-The controller handles Kubernetes-native workflows such as shell sessions. The local demo installs
-the API, controller, Postgres, Redis, CRD, RBAC, services, ingress, and a demo OpenLDAP server.
+It integrates with tools like Argo CD, GitLab, Prometheus, Grafana, LDAP, Ansible, and Backstage
+instead of trying to replace them.
 
-Linse integrates with tools like Argo CD, GitLab, Prometheus, Grafana, LDAP, and Ansible instead of
-trying to replace them.
-
-For details, see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+For the full design — process boundaries, persistence, multi-cluster access, and the onboarding
+engine — see [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Caveats
 

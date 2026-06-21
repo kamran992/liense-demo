@@ -109,6 +109,8 @@ The adapter packages are the intended extension point:
 
 Adding another backend should mean implementing the relevant interface and wiring it in `internal/app`. It should not require rewriting the service layer.
 
+Linse also exposes a read-only Backstage catalog endpoint. A pure mapper projects the service catalog into Backstage entities (owner teams → Groups, applications → Systems, services → Components), served behind a static token for a Backstage Entity Provider to ingest. It is one-way today (Linse → Backstage); the inverted "Backstage declares, Linse enriches and operates" model is planned (see ROADMAP).
+
 ---
 
 ## 4. Data Model and Persistence
@@ -196,23 +198,23 @@ For cluster-scoped requests, the frontend sends the target cluster as part of th
 
 The handler receives an already-authenticated request with the target cluster resolved. It should not need to parse a raw kubeconfig or repeat the top-level role check.
 
-### Onboarding saga
+### Onboarding workflow engine
 
-The onboarding flow is a linear saga today. It creates the pieces needed to connect a service to source control, GitOps, Kubernetes, RBAC, and registry credentials.
+Onboarding runs on a model-driven DAG workflow engine. A flow is a stored, versioned model whose steps declare explicit dependencies; the engine expands the model for the request, validates it (cycle detection), and executes it. The flow is persisted as a job in Postgres with one row per step.
 
-The flow is modeled as a job in Postgres with step records. A typical onboarding job includes:
+The default model provisions a service across GitLab (SCM groups, code + chart repositories), the service catalog, Helm chart rendering, and Argo CD (project + applications), then registers identity keys.
 
-1. create the SCM group hierarchy and service repository in GitLab
-2. create the Helm chart repository
-3. create the Argo CD project
-4. create the Argo CD application
-5. create the Kubernetes namespace
-6. apply RBAC for the service team
-7. create the registry pull secret and store the credential reference
+Execution properties:
 
-Each step records success, failure, or skipped. Steps are intended to be idempotent, so a restarted worker can resume from the last incomplete step. If a non-retryable failure occurs, rollback runs in reverse order for completed steps where rollback is available.
+- **DAG, not a chain.** A step runs once its dependencies are satisfied; independent steps run concurrently through a bounded worker pool. The default flow has real parallelism (e.g. namespace creation alongside repository creation) and later steps that join multiple branches.
+- **Fan-out.** A step can expand per item (`for_each`) — per service, per deployment target, per namespace — so one job onboards N services across M targets.
+- **Idempotent + resumable.** Steps inspect their recorded outputs before any external write, so a restarted worker resumes from the last incomplete step without repeating work.
+- **Retry, timeout, optional steps.** Each step has max-attempts and a timeout; optional steps degrade to a warning instead of failing the job.
+- **Reversible steps + rollback policy.** Steps declare a rollback contract; on a non-retryable failure the engine rolls back completed reversible steps in reverse order, under the model's rollback policy (pause / best-effort / halt / compensate).
+- **Dry-run preview.** The engine can resolve the full plan — which steps will run and their resolved config — without creating a job or touching anything.
+- **Vendor-neutral.** `action_type` is opaque to the engine and resolved through a handler registry. The shipped handlers target GitLab and Argo CD; the engine itself is not tied to either.
 
-The current implementation is GitLab-oriented. GitOps work goes through the GitOps adapter and SCM work goes through the SCM adapter, but the workflow shape is still a single linear path. A DAG-based onboarding engine is planned.
+The engine emits lifecycle events (job/step started, completed, failed, rolled back) for progress streaming and audit. It is **not** event-sourced — state lives in the job/step rows; the events are for observability. Human approval gates are not implemented yet.
 
 ### Cloud shell
 
@@ -237,7 +239,7 @@ The controller adds several basic controls: a dedicated shell namespace, a pod q
 
 Some parts of the architecture are intentionally simple at this stage:
 
-- The onboarding engine is a linear saga, not a DAG.
+- Onboarding has no human approval gates yet, and its shipped step handlers target GitLab + Argo CD only.
 - Postgres remains the main source of truth while the CRD-based resource model is introduced.
 - Redis fallback to memory is useful for local development, but it is not appropriate for multiple API replicas.
 - The API can run in a degraded no-database mode, but most platform features need Postgres.
@@ -254,7 +256,7 @@ These are the areas a reviewer should treat as active engineering concerns rathe
 
 The following items are not implemented in the current version. They are tracked in the roadmap and should be treated as future work, not behavior available today.
 
-- A DAG-based workflow engine with parallel steps, approval gates, and reusable step handlers is planned.
+- On top of the onboarding DAG engine (parallel steps, reusable handlers, rollback, resume — already shipped): human approval gates, additional SCM/CI step handlers, and an event-sourced execution log with discovery-driven reconciliation.
 - Applications, Services, Environments, Targets, and Pipelines currently live primarily in Postgres. The Kubernetes-native CRD model is in progress, but the write path and reconcilers are not shipped yet.
 - NetBox integration is not implemented.
 - Crossplane integration for cloud resource lifecycle is not implemented.

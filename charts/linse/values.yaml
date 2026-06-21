@@ -1,7 +1,7 @@
 image:
   repository: kamran420/lens-with-go
   # Set to the image tag built by your pipeline, e.g. "demo-1.0.0" or the commit SHA.
-  tag: "demo"
+  tag: "demo-2"
 
 service:
   type: LoadBalancer
@@ -114,11 +114,23 @@ config: |
     enforced: false
 
   observability:
-    prometheus_url: ""
-    grafana_url: ""
-    grafana_external_url: ""
+    prometheus_url: "https://prometheus.example.com"
+    grafana_url: "https://grafana.example.com/"
+    grafana_external_url: "https://grafana.example.com/"
 
-  argocd: []
+  argocd:
+    - name: prod
+      url: "https://argocd-prod.example.com"
+      token: ""
+      username: admin
+      password: ""
+      insecure: false
+    - name: dev
+      url: "https://argocd-dev.example.com"
+      token: ""
+      username: admin
+      password: ""
+      insecure: false
 
   gitlab:
     url: "https://gitlab.example.com"
@@ -162,31 +174,6 @@ config: |
   audit:
     retention_days: 0
     purge_interval_hours: 0
-
-  plugins:
-    gitops:
-      argocd:
-        instances:
-          - name: prod
-            url: "https://argocd-prod.example.com"
-            token: ""
-            username: admin
-            password: ""
-            insecure: false
-          - name: dev
-            url: "https://argocd-dev.example.com"
-            token: ""
-            username: admin
-            password: ""
-            insecure: false
-    metrics:
-      prometheus:
-        url: "https://prometheus.example.com"
-    dashboards:
-      grafana:
-        url: "https://grafana.example.com/"
-        browser_url: "https://grafana.example.com/"
-    auth: {}
 
   rateLimit:
     globalPerIP: 0

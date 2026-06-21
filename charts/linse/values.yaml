@@ -148,6 +148,13 @@ config: |
     docker_registry: "registry.example.com/library"
     webhook_secret: ""
 
+  # Backstage catalog export (optional, read-only). Uncomment and set a token to
+  # let a Backstage Entity Provider pull Linse's catalog (teams/apps/services).
+  # An empty or unset export_token disables the endpoint.
+  # backstage:
+  #   export_token: ""    # Bearer token the Backstage Entity Provider must present
+  #   ui_base_url: ""     # public Linse UI base for deep-links back into Linse (optional)
+
   redis:
     addr: linse-redis:6379
     channel: lens:events

@@ -1,7 +1,7 @@
-# Local demo overrides - used on top of demo/charts/linse/values.yaml
-# helm install linse ./demo/charts/linse -n linse \
-#   -f demo/charts/linse/values.yaml \
-#   -f demo/local/values-local.yaml
+# Local demo overrides - used on top of charts/linse/values.yaml
+# helm install linse ./charts/linse -n linse \
+#   -f charts/linse/values.yaml \
+#   -f local/values-local.yaml
 
 image:
   repository: kamran420/lens-with-go
@@ -93,6 +93,13 @@ config: |
     chart_group_path: ""
     docker_registry: ""
     webhook_secret: ""
+
+  # Backstage catalog export (optional, read-only). Uncomment and set a token to
+  # let a Backstage Entity Provider pull Linse's catalog (teams/apps/services).
+  # An empty or unset export_token disables the endpoint.
+  # backstage:
+  #   export_token: ""    # Bearer token the Backstage Entity Provider must present
+  #   ui_base_url: "http://linse.localhost"   # deep-links back into Linse (optional)
 
   redis:
     addr: linse-redis:6379

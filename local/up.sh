@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-LOCAL_DIR="$ROOT_DIR/demo/local"
-CHART_DIR="$ROOT_DIR/demo/charts/linse"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+LOCAL_DIR="$ROOT_DIR/local"
+CHART_DIR="$ROOT_DIR/charts/linse"
 
 CLUSTER_NAME="${CLUSTER_NAME:-linse-demo}"
 RELEASE_NAME="${RELEASE_NAME:-linse}"
@@ -20,7 +20,7 @@ HELM_EXTRA_ARGS=()
 
 usage() {
   cat <<EOF
-Usage: demo/local/up.sh [options]
+Usage: local/up.sh [options]
 
 Options:
   --with-gitlab   Start GitLab CE and wire gitlab.local into the Linse pod.
@@ -98,10 +98,8 @@ k3d kubeconfig merge "$CLUSTER_NAME" --kubeconfig-switch-context >/dev/null
 if [ "$INSTALL_INGRESS" -eq 1 ]; then
   say "Installing ingress-nginx"
   kubectl apply -f "$INGRESS_NGINX_URL"
-  kubectl wait \
+  kubectl rollout status deployment/ingress-nginx-controller \
     --namespace ingress-nginx \
-    --for=condition=ready pod \
-    --selector=app.kubernetes.io/component=controller \
     --timeout=180s
 fi
 

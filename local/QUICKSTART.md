@@ -50,26 +50,26 @@ If `docker-compose version` is not found, add the Homebrew plugin directory to
 ## 1. Create The Cluster
 
 ```bash
-k3d cluster create --config demo/local/k3d-cluster.yaml
+k3d cluster create --config local/k3d-cluster.yaml
 ```
 
 Install nginx ingress:
 
 ```bash
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.10.1/deploy/static/provider/cloud/deploy.yaml
-kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=90s
+kubectl rollout status deployment/ingress-nginx-controller --namespace ingress-nginx --timeout=120s
 ```
 
 ## 2. Deploy Linse And OpenLDAP
 
 ```bash
-helm install linse ./demo/charts/linse \
+helm install linse ./charts/linse \
   -n linse \
   --create-namespace \
-  -f demo/charts/linse/values.yaml \
-  -f demo/local/values-local.yaml
+  -f charts/linse/values.yaml \
+  -f local/values-local.yaml
 
-kubectl apply -f demo/local/ldap/deployment.yaml
+kubectl apply -f local/ldap/deployment.yaml
 kubectl rollout status deployment/linse -n linse
 kubectl rollout status deployment/openldap -n linse
 ```
@@ -106,7 +106,7 @@ container can be OOM-killed during boot.
 Start GitLab:
 
 ```bash
-cd demo/local
+cd local
 docker-compose up -d
 ```
 
@@ -123,14 +123,14 @@ docker exec linse-gitlab cat /etc/gitlab/initial_root_password
 ```
 
 Open `http://localhost:8929`, log in as `root`, then create a Personal Access
-Token with the `api` scope. Put it in `demo/local/values-local.yaml` under
+Token with the `api` scope. Put it in `local/values-local.yaml` under
 `gitlab.token`, then upgrade:
 
 ```bash
-helm upgrade linse ./demo/charts/linse \
+helm upgrade linse ./charts/linse \
   -n linse \
-  -f demo/charts/linse/values.yaml \
-  -f demo/local/values-local.yaml
+  -f charts/linse/values.yaml \
+  -f local/values-local.yaml
 ```
 
 For GitLab webhooks, enable local network requests in GitLab:
@@ -158,7 +158,7 @@ k3d cluster delete linse-demo
 If you started GitLab:
 
 ```bash
-cd demo/local
+cd local
 docker-compose down
 docker-compose down -v
 ```

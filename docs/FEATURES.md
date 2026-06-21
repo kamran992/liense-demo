@@ -16,6 +16,8 @@ Status tags are based on the maintainer's current assessment. They are meant to 
 
 Cluster-level operations for registered Kubernetes clusters. Most resource-list views are served from an informer-backed in-process cache, which reduces repeated list calls to workload-cluster apiservers.
 
+> **Registering a cluster:** import a flattened, single-context kubeconfig — `kubectl config view --minify --flatten`. A full multi-context `~/.kube/config` often references local certificate files or exec/auth-provider plugins that don't resolve inside the Linse pod; those contexts are skipped on import, so flattening is the reliable path.
+
 **Context switching** — ✅ Working in demo
 Switch between registered clusters within a single session; each cluster carries its own access context.
 
@@ -142,14 +144,17 @@ OpenTelemetry tracing export/integration for existing backends such as Jaeger, T
 
 Automation features are optional and apply when Linse is configured with host inventory and Ansible/SSH access. Linse acts as the control plane for targeting, approval, history, and audit; execution is delegated to Ansible or runs over SSH.
 
-**Ansible host, group, and playbook management** — ✅ Working in demo
+**Ansible host, group, and playbook management** — 🟡 Partial
 Register hosts and groups, browse available playbooks, and trigger playbook runs with targeting and approval from within the platform.
+Notes: The host/group/playbook management surfaces work, but playbook **execution** has not been verified end-to-end in the current demo — treat Ansible runs as unverified for now.
 
-**SSH terminal (PTY)** — ✅ Working in demo
+**SSH terminal (PTY)** — 🟡 Partial
 Open an interactive terminal session to a registered host over SSH; the PTY is bridged through the API over WebSocket.
+Notes: Hosts can be registered, but **connecting to a new host is currently blocked** — first-connection host-key (fingerprint) trust isn't wired into the connect path yet, so a session can't establish until the key is accepted. Small known fix, not yet applied.
 
-**SFTP browser** — ✅ Working in demo
+**SFTP browser** — 🟡 Partial
 Browse and transfer files on a registered host via SFTP; no separate client required.
+Notes: Uses the same SSH transport as the terminal, so it is affected by the same first-connection host-key trust gap noted above.
 
 **Cloud shell** — ✅ Working in demo
 Provision a shell pod in the management cluster with a generated kubeconfig for the user's accessible clusters and a persistent home directory.

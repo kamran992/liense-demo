@@ -88,7 +88,7 @@ Status tags: Working / Partial.
 | Pipelines and promotions | Partial | Pipeline views work; environment-to-environment promotion is not fully tested end-to-end |
 | SRE and reliability | Partial | Early incident, SLI, and scorecard surfaces; refactor planned |
 | Observability | Partial | Prometheus and Grafana integrations exist; distributed tracing is planned |
-| Automation | Working | Ansible, SSH PTY, SFTP, and cloud shell workflows |
+| Automation | Partial | Cloud shell works; SSH/SFTP connect is gated by an unwired host-key trust step; Ansible playbook runs not yet verified |
 | Governance and access | Partial | Local/LDAP auth, RBAC, impersonation, and audit log are implemented; OIDC/AD are planned |
 | Platform plumbing | Partial | Async outbox, job queue, and early row-level tenancy support |
 
